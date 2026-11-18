@@ -7,7 +7,6 @@ illustrations. FlashEDA's amber bolt and navy tile provide the brand accents.
 
 from __future__ import annotations
 
-import base64
 import html
 from datetime import date
 from pathlib import Path
@@ -26,12 +25,6 @@ C = {
     "ink": "#26251E", "ink2": "#3B392F", "body": "#545244", "muted": "#6F6C5B", "faint": "#A9A593",
     "orange": "#F97316", "amber": "#F59E0B", "gold": "#FDE047", "navy": "#0B1220", "navy2": "#16233D",
 }
-
-
-def asset_uri(rel: str) -> str:
-    data = (ROOT / rel).read_bytes()
-    mime = "image/svg+xml" if rel.endswith(".svg") else "image/png"
-    return f"data:{mime};base64," + base64.b64encode(data).decode()
 
 
 _CSS = f"""
@@ -195,6 +188,10 @@ div[class*="st-key-doccontent"] [data-testid="stCode"] pre, div[class*="st-key-d
 .fe-landscape {{ margin: 1.5rem calc(-1 * max(2rem, calc(50cqw - 568px))) 0; }}
 .fe-landscape img {{ width:100%; display:block; }}
 
+/* hidden page links used for instant navigation (see spa_navigation) */
+div[class*="st-key-spa-links"],
+div:has(> div[class*="st-key-spa-links"]) {{ position:absolute !important; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }}
+
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {{
   [data-testid="stMainBlockContainer"] {{ padding: 5rem 1rem 0; }}
@@ -256,7 +253,7 @@ def footer() -> None:
     st.html(f"""
 <footer class="fe-footer">
   <div class="fe-footer-cols">
-    <div><img src="{asset_uri('assets/logo/flasheda-logo-light.svg')}" alt="FlashEDA"/>
+    <div><img src="app/static/logo/flasheda-logo-light.svg" alt="FlashEDA"/>
       <p class="fe-muted" style="font-size:.9rem;max-width:16rem;margin-top:.8rem">Fixed-time EDA for datasets of any size, and validated code to clean, model, check and forecast them.</p></div>
     {col_html}
   </div>
@@ -265,6 +262,47 @@ def footer() -> None:
     <span>&copy; {date.today().year} FlashEDA &middot; MIT License &middot; Designed &amp; developed by <b>Japanjot Singh</b></span>
     <span><a href="{REPO_URL}" target="_blank" rel="noopener">GitHub</a> &nbsp;&middot;&nbsp; <a href="{PYPI_URL}" target="_blank" rel="noopener">PyPI</a></span>
   </div>
-  <div class="fe-landscape"><img src="{il.landscape()}" alt=""/></div>
+  <div class="fe-landscape"><img src="{il.url('landscape')}" alt=""/></div>
 </footer>
 """)
+
+
+# ---------------------------------------------------------------------------
+# Instant navigation
+# ---------------------------------------------------------------------------
+# Links written in HTML (buttons, cards, footer, pager, links inside the docs)
+# would make the browser reload the whole app. This script catches clicks on
+# internal links and clicks the matching hidden st.page_link instead, which
+# switches page inside the running app, like the top navigation does.
+
+_SPA_JS = r"""
+<script>
+(function () {
+  const P = window.parent;
+  if (P.__feSpaInstalled) return;
+  P.__feSpaInstalled = true;
+  P.document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest ? e.target.closest("a[href]") : null;
+    if (!a || a.closest('[class*="st-key-spa-links"]')) return;
+    const href = a.getAttribute("href");
+    if (!href || /^(https?:|mailto:|tel:|#)/i.test(href) || href.includes("#")) return;
+    const path = new URL(href, P.location.href).pathname.replace(/\/+$/, "") || "/";
+    for (const link of P.document.querySelectorAll('[class*="st-key-spa-links"] a[href]')) {
+      const lp = new URL(link.href, P.location.href).pathname.replace(/\/+$/, "") || "/";
+      if (lp === path) { e.preventDefault(); e.stopPropagation(); link.click(); P.scrollTo(0, 0); return; }
+    }
+  }, true);
+})();
+</script>
+"""
+
+
+def spa_navigation(pages) -> None:
+    """Render hidden page links and the click handler that uses them."""
+    import streamlit.components.v1 as components
+
+    with st.container(key="spa-links"):
+        for page in pages:
+            st.page_link(page, label=page.title)
+        components.html(_SPA_JS, height=0)
