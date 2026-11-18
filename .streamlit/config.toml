@@ -18,3 +18,5 @@ toolbarMode = "minimal"
 
 [server]
 headless = true
+# Serves static/ at app/static/ (pre-rendered illustrations, logo), cached by browsers.
+enableStaticServing = true
