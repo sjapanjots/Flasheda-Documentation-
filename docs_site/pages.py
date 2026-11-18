@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 import streamlit as st
 
@@ -79,6 +80,7 @@ BY_SLUG = {d.slug: d for d in DOCS}
 PAGES: dict = {}  # slug -> st.Page, filled by app.py
 
 
+@lru_cache(maxsize=None)
 def read(name: str) -> str:
     return (ROOT / "content" / f"{name}.md").read_text(encoding="utf-8")
 
@@ -143,7 +145,7 @@ def home() -> None:
   <p class="fe-lead">FlashEDA analyses a fixed-size sample, so a 100-million-row file takes about as long as a 100-thousand-row one. Then it writes validated code to clean, model, check and forecast it.</p>
   <div class="fe-btns">{btn("Get started", "get-started")}{btn("View on GitHub", REPO_URL, "light")}</div>
   <div class="fe-install"><span>$</span> pip install <b>flasheda</b></div>
-  <div class="fe-hero-art"><img src="{il.hero()}" alt="A huge dataset is sampled into a small grid of points, which becomes a report and a validated script"/></div>
+  <div class="fe-hero-art"><img src="{il.url('hero')}" alt="A huge dataset is sampled into a small grid of points, which becomes a report and a validated script"/></div>
 </section>
 
 <section class="fe-section">
@@ -186,7 +188,7 @@ def home() -> None:
         ("notebook", "Notebook", "Everything as one runnable notebook.", "notebook"),
     ]
     card_html = "".join(
-        f'<a class="fe-card" href="{href}" target="_self"><div class="art"><img src="{il.step(art)}" alt=""/></div>'
+        f'<a class="fe-card" href="{href}" target="_self"><div class="art"><img src="{il.url("step-" + art)}" alt=""/></div>'
         f"<h4>{title}</h4><p>{desc}</p></a>" for art, title, desc, href in cards)
     st.html(f"""
 <section class="fe-section">
@@ -241,7 +243,7 @@ def render_doc(slug: str) -> None:
     st.html(f"""
 <div class="fe-doc-head">
   <div>{pill(doc.section)}<h1 class="fe-h1">{esc(doc.title)}</h1><p class="fe-lead">{esc(doc.lead)}</p></div>
-  <div class="fe-panel"><img src="{il.step(doc.art)}" alt=""/></div>
+  <div class="fe-panel"><img src="{il.url('step-' + doc.art)}" alt=""/></div>
 </div>""")
     nav, body = st.columns([1, 3.4], gap="large")
     with nav:
