@@ -3,7 +3,7 @@
 import streamlit as st
 
 from docs_site.pages import DOCS, PAGES, home, make_page
-from docs_site.theme import apply_theme
+from docs_site.theme import apply_theme, spa_navigation
 
 st.set_page_config(page_title="FlashEDA — Fixed-time EDA for data of any size",
                    page_icon="assets/logo/flasheda-mark-small-32.png", layout="wide")
@@ -18,4 +18,6 @@ sections = {"": [home_page]}
 for d in DOCS:
     sections.setdefault(d.section, []).append(PAGES[d.slug])
 
-st.navigation(sections, position="top").run()
+current = st.navigation(sections, position="top")
+spa_navigation([home_page, *PAGES.values()])
+current.run()
