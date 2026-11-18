@@ -256,3 +256,31 @@ def landscape() -> str:
             b += dot(x + 14, base - hgt * 1.02 - 8, 5, "orange")
     b += ink("M 0 300 C 300 286 600 310 900 296 C 1100 288 1300 302 1440 296", 2.0, INK_SOFT)
     return _uri(_svg(1440, 320, b))
+
+
+# ---------------------------------------------------------------------------
+# Pre-rendered images
+# ---------------------------------------------------------------------------
+# SVG noise filters are expensive for browsers to rasterise, so the site serves
+# WebP renders of these drawings from static/illustrations/ (made by
+# scripts/render_illustrations.py). The SVG builders above stay the source.
+
+from pathlib import Path  # noqa: E402
+
+STEP_NAMES = ("sample", "analyse", "plan", "write", "validate", "clean", "models", "contracts", "drift",
+              "databases", "text", "time-series", "notebook", "install", "reference")
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static" / "illustrations"
+
+
+def sources() -> dict[str, str]:
+    """name -> SVG data URI, for every illustration on the site."""
+    out = {"hero": hero(), "landscape": landscape()}
+    out.update({f"step-{n}": step(n) for n in STEP_NAMES})
+    return out
+
+
+def url(name: str) -> str:
+    """Static WebP URL when it has been rendered, else the SVG data URI."""
+    if (STATIC_DIR / f"{name}.webp").exists():
+        return f"app/static/illustrations/{name}.webp"
+    return sources()[name]
