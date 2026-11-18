@@ -26,6 +26,19 @@ The visual language takes inspiration from [getnudge.info](https://getnudge.info
 
 All illustrations are original, drawn as SVG in `docs_site/illustrations.py` (ink lines with a slight hand-drawn wobble over soft watercolour washes).
 
+## Performance
+
+- **Pre-rendered illustrations.** The SVGs use noise filters that browsers draw pixel by pixel (about 10× slower than an image). The site serves WebP renders from `static/illustrations/` instead, which look the same and are cached by the browser.
+- **Instant navigation.** Links written in HTML (buttons, cards, footer, pager, links inside the docs) switch pages inside the running app, like the top navigation, instead of reloading it.
+- **Static files** (illustrations, logo) are served from `static/` with `server.enableStaticServing`, so they are downloaded once.
+
+After changing an illustration, render the images again:
+
+```bash
+pip install playwright && playwright install chromium
+python scripts/render_illustrations.py
+```
+
 ## Project structure
 
 ```
@@ -36,7 +49,10 @@ All illustrations are original, drawn as SVG in `docs_site/illustrations.py` (in
 │   ├── theme.py              # global CSS, buttons, pills, footer
 │   └── illustrations.py      # original SVG illustrations
 ├── content/                  # one Markdown file per docs page (generated)
-├── scripts/sync_content.py   # regenerate content/ from the Flash-EDA repo
+├── scripts/
+│   ├── sync_content.py         # regenerate content/ from the Flash-EDA repo
+│   └── render_illustrations.py # render the SVG illustrations to static/*.webp
+├── static/                   # served at app/static/: illustrations (WebP), logo
 ├── assets/logo/              # FlashEDA logo files (from the package repo)
 ├── .streamlit/config.toml    # theme: colours, Inter, JetBrains Mono, radii
 └── requirements.txt
